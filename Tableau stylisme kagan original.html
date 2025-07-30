@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stylisme Shooting - Kanban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .category-colors {
+            --chaussures: #1e96eb;
+            --bijoux: #8b5cf6;
+            --sacs: #10b981;
+            --chapeaux: #f59e0b;
+            --hauts: #ef4444;
+            --bas: #06b6d4;
+            --dessous: #ec4899;
+        }
+        
+        .dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+        
+        .drag-over {
+            background-color: #f3f4f6;
+            border: 2px dashed #9ca3af;
+        }
+        
+        .image-container {
+            min-height: 120px;
+            background: #f9fafb;
+            border: 1px dashed #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .image-container:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        
+        .acquisition-pret { background-color: #dbeafe; color: #1e40af; }
+        .acquisition-achat { background-color: #dcfce7; color: #166534; }
+        .acquisition-don { background-color: #fef3c7; color: #92400e; }
+        
+        .category-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .kanban-container {
+            overflow-x: auto;
+            padding-bottom: 20px;
+        }
+        
+        .kanban-board {
+            display: flex;
+            gap: 16px;
+            min-width: fit-content;
+            padding: 16px;
+            align-items: flex-start;
+        }
+        
+        .category-column {
+            min-width: 280px;
+            max-width: 280px;
+            background: white;
+            border-radius: 8px;
+            border: 0.5px solid #e5e7eb;
+            height: fit-content;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            border: 0.5px solid #e5e7eb;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: move;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Fix pour le bouton de suppression */
+        .card:hover .delete-card {
+            opacity: 1;
+        }
+
+        .delete-card {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: white;
+            border-radius: 50%;
+            padding: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.2s;
+            cursor: pointer;
+            z-index: 5;
+        }
+
+        .delete-card:hover {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">Stylisme Shooting</h1>
+            <div class="flex gap-2">
+                <button id="exportBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Exporter
+                </button>
+                <button id="importBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    Importer
+                </button>
+                <button id="addCategoryBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Ajouter une catégorie
+                </button>
+            </div>
+        </div>
+        
+        <!-- Input caché pour l'import -->
+        <input type="file" id="importFile" accept=".json" style="display: none;">
+        
+        <div class="kanban-container">
+            <div id="kanbanBoard" class="kanban-board">
+                <!-- Categories will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for confirmation -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4" id="confirmTitle">Confirmation</h3>
+            <p class="text-gray-600 mb-6" id="confirmMessage">Êtes-vous sûr ?</p>
+            <div class="flex gap-3 justify-end">
+                <button id="confirmCancel" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Annuler</button>
+                <button id="confirmOk" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class KanbanBoard {
+            constructor() {
+                this.categories = [
+                    { id: 'chaussures', name: 'Chaussures', color: '#1e96eb', cards: [] },
+                    { id: 'bijoux', name: 'Bijoux & Accessoires', color: '#8b5cf6', cards: [] },
+                    { id: 'sacs', name: 'Sacs', color: '#10b981', cards: [] },
+                    { id: 'chapeaux', name: 'Chapeaux', color: '#f59e0b', cards: [] },
+                    { id: 'hauts', name: 'Hauts', color: '#ef4444', cards: [] },
+                    { id: 'bas', name: 'Bas', color: '#06b6d4', cards: [] },
+                    { id: 'dessous', name: 'Dessous', color: '#ec4899', cards: [] }
+                ];
+                this.cardIdCounter = 1;
+                this.categoryIdCounter = 8;
+                this.draggedCard = null;
+                this.draggedCategory = null;
+                this.maxFileSize = 5 * 1024 * 1024; // 5MB
+                this.allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                
+                // Charger les données sauvegardées
+                this.loadData();
+                this.init();
+            }
+            
+            // Sauvegarder les données dans localStorage
+            saveData() {
+                try {
+                    const dataToSave = {
+                        categories: this.categories,
+                        cardIdCounter: this.cardIdCounter,
+                        categoryIdCounter: this.categoryIdCounter,
+                        timestamp: new Date().toISOString()
+                    };
+                    localStorage.setItem('kanban-stylisme-data', JSON.stringify(dataToSave));
+                    console.log('Données sauvegardées automatiquement');
+                } catch (error) {
+                    console.error('Erreur lors de la sauvegarde:', error);
+                }
+            }
+            
+            // Charger les données depuis localStorage
+            loadData() {
+                try {
+                    const savedData = localStorage.getItem('kanban-stylisme-data');
+                    if (savedData) {
+                        const parsedData = JSON.parse(savedData);
+                        this.categories = parsedData.categories || this.categories;
+                        this.cardIdCounter = parsedData.cardIdCounter || this.cardIdCounter;
+                        this.categoryIdCounter = parsedData.categoryIdCounter || this.categoryIdCounter;
+                        console.log('Données chargées depuis la sauvegarde');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors du chargement:', error);
+                }
+            }
+            
+            // Exporter les données en JSON
+            exportData() {
+                const dataToExport = {
+                    categories: this.categories,
+                    cardIdCounter: this.cardIdCounter,
+                    categoryIdCounter: this.categoryIdCounter,
+                    exportDate: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(dataToExport, null, 2)],
+                    { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `kanban-stylisme-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            // Importer des données depuis un fichier JSON
+            importData(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        if (importedData.categories) {
+                            this.categories = importedData.categories;
+                            this.cardIdCounter = importedData.cardIdCounter || this.cardIdCounter;
+                            this.categoryIdCounter = importedData.categoryIdCounter || this.categoryIdCounter;
+                            this.saveData();
+                            this.render();
+                            alert('Données importées avec succès !');
+                        } else {
+                            alert('Format de fichier invalide');
+                        }
+                    } catch (error) {
+                        alert('Erreur lors de l\'importation du fichier');
+                        console.error('Import error:', error);
+                    }
+                };
+                reader.readAsText(file);
+            }
+            
+            init() {
+                this.render();
+                this.setupEventListeners();
+                lucide.createIcons();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('addCategoryBtn').addEventListener('click', () => this.addCategory());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportData());
+                document.getElementById('importBtn').addEventListener('click', () => {
+                    document.getElementById('importFile').click();
+                });
+                document.getElementById('importFile').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        this.importData(file);
+                        e.target.value = ''; // Reset input
+                    }
+                });
+                
+                // Modal events
+                document.getElementById('confirmCancel').addEventListener('click', () => this.hideModal());
+                document.getElementById('confirmOk').addEventListener('click', () => {
+                    if (this.confirmCallback) this.confirmCallback();
+                    this.hideModal();
+                });
+                
+                // Paste event for images
+                document.addEventListener('paste', (e) => this.handlePaste(e));
+            }
+            
+            render() {
+                const board = document.getElementById('kanbanBoard');
+                board.innerHTML = '';
+                
+                this.categories.forEach(category => {
+                    const categoryEl = this.createCategoryElement(category);
+                    board.appendChild(categoryEl);
+                });
+                
+                // Optimisation : ne recréer les icônes que pour les nouveaux éléments
+                requestAnimationFrame(() => {
+                    lucide.createIcons();
+                });
+            }
+            
+            createCategoryElement(category) {
+                const categoryEl = document.createElement('div');
+                categoryEl.className = 'category-column';
+                categoryEl.draggable = true;
+                categoryEl.dataset.categoryId = category.id;
+                // Appliquer la couleur de fond à toute la colonne
+                categoryEl.style.backgroundColor = `${category.color}15`;
+                
+                categoryEl.innerHTML = `
+                    <div class="category-header p-4 border-b" style="background-color: ${category.color}20; border-color: ${category.color}40;">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-semibold text-gray-900 cursor-pointer category-title" style="color: ${category.color};">
+                                ${category.name}
+                            </h3>
+                            <button class="delete-category text-gray-400 hover:text-red-500 transition-colors">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1">${category.cards.length} élément(s)</div>
+                    </div>
+                    <div class="p-4">
+                        <button class="add-card w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            Ajouter une carte
+                        </button>
+                        <div class="cards-container mt-4">
+                            ${category.cards.map(card => this.createCardHTML(card)).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                // Event listeners
+                categoryEl.querySelector('.category-title').addEventListener('click', (e) => this.editCategoryName(e, category));
+                categoryEl.querySelector('.delete-category').addEventListener('click', () => this.deleteCategory(category.id));
+                categoryEl.querySelector('.add-card').addEventListener('click', () => this.addCard(category.id));
+                
+                // Drag and drop for category
+                categoryEl.addEventListener('dragstart', (e) => this.handleCategoryDragStart(e, category));
+                categoryEl.addEventListener('dragover', (e) => this.handleCategoryDragOver(e));
+                categoryEl.addEventListener('drop', (e) => this.handleCategoryDrop(e));
+                
+                // Card drag and drop
+                const cardsContainer = categoryEl.querySelector('.cards-container');
+                cardsContainer.addEventListener('dragover', (e) => this.handleCardDragOver(e));
+                cardsContainer.addEventListener('drop', (e) => this.handleCardDrop(e, category.id));
+                
+                return categoryEl;
+            }
+            
+            createCardHTML(card) {
+                return `
+                    <div class="card" draggable="true" data-card-id="${card.id}">
+                        <button class="delete-card">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                        <div class="image-container mb-3" data-card-id="${card.id}">
+                            ${card.image ? 
+                                `<div class="w-full">
+                                    <img src="${card.image}" alt="Image" class="w-full">
+                                    <div class="text-xs text-gray-500 mt-1 truncate">${card.fileName || 'Image'}</div>
+                                </div>` :
+                                `<div class="text-gray-400 text-center">
+                                    <i data-lucide="image" class="w-8 h-8 mx-auto mb-2"></i>
+                                    <div class="text-sm">Cliquer pour ajouter une image</div>
+                                </div>`
+                            }
+                        </div>
+                        <div class="space-y-3">
+                            <input type="text" placeholder="Créateur/Designer" value="${card.creator || ''}" 
+                                   class="w-full p-2 border border-gray-200 rounded text-sm creator-input">
+                            <select class="w-full p-2 border border-gray-200 rounded text-sm acquisition-select ${card.acquisition ? 'acquisition-' + card.acquisition : ''}">
+                                <option value="">Acquis par...</option>
+                                <option value="pret" ${card.acquisition === 'pret' ? 'selected' : ''}>Prêt</option>
+                                <option value="achat" ${card.acquisition === 'achat' ? 'selected' : ''}>Achat</option>
+                                <option value="don" ${card.acquisition === 'don' ? 'selected' : ''}>Don</option>
+                            </select>
+                            <input type="text" placeholder="Boutique/Personne" value="${card.source || ''}" 
+                                   class="w-full p-2 border border-gray-200 rounded text-sm source-input">
+                        </div>
+                        ${card.error ? `<div class="error-message">${card.error}</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            addCategory() {
+                const newCategory = {
+                    id: `category-${this.categoryIdCounter++}`,
+                    name: 'Nouvelle catégorie',
+                    color: '#6b7280',
+                    cards: []
+                };
+                
+                this.categories.push(newCategory);
+                this.saveData();
+                this.render();
+            }
+            
+            deleteCategory(categoryId) {
+                const category = this.categories.find(c => c.id === categoryId);
+                if (category.cards.length > 0) {
+                    this.showModal(
+                        'Supprimer la catégorie',
+                        `La catégorie "${category.name}" contient ${category.cards.length} carte(s). Voulez-vous vraiment la supprimer ?`,
+                        () => {
+                            this.categories = this.categories.filter(c => c.id !== categoryId);
+                            this.saveData();
+                            this.render();
+                        }
+                    );
+                } else {
+                    this.categories = this.categories.filter(c => c.id !== categoryId);
+                    this.saveData();
+                    this.render();
+                }
+            }
+            
+            editCategoryName(e, category) {
+                const titleEl = e.target;
+                const currentName = titleEl.textContent;
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentName;
+                input.className = 'bg-transparent border-none outline-none font-semibold w-full';
+                input.style.color = category.color;
+                
+                titleEl.replaceWith(input);
+                input.focus();
+                input.select();
+                
+                const saveEdit = () => {
+                    const newName = input.value.trim() || currentName;
+                    category.name = newName;
+                    this.saveData();
+                    this.render();
+                };
+                
+                input.addEventListener('blur', saveEdit);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') saveEdit();
+                    if (e.key === 'Escape') this.render();
+                });
+            }
+            
+            addCard(categoryId) {
+                const category = this.categories.find(c => c.id === categoryId);
+                const newCard = {
+                    id: `card-${this.cardIdCounter++}`,
+                    image: null,
+                    fileName: null,
+                    creator: '',
+                    acquisition: '',
+                    source: '',
+                    error: null
+                };
+                
+                // Ajouter la nouvelle carte au début du tableau (en haut)
+                category.cards.unshift(newCard);
+                this.saveData();
+                this.render();
+            }
+            
+            validateFile(file) {
+                if (!this.allowedImageTypes.includes(file.type)) {
+                    return 'Type de fichier non supporté. Utilisez JPG, PNG, GIF ou WebP.';
+                }
+                
+                if (file.size > this.maxFileSize) {
+                    return 'Le fichier est trop volumineux. Taille maximale : 5MB.';
+                }
+                
+                return null;
+            }
+            
+
+            
+            selectImage(cardId) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const error = this.validateFile(file);
+                        if (error) {
+                            const card = this.findCard(cardId);
+                            card.error = error;
+                            this.render();
+                        } else {
+                            this.loadImage(file, cardId);
+                        }
+                    }
+                };
+                input.click();
+            }
+            
+            loadImage(file, cardId) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const card = this.findCard(cardId);
+                    card.image = e.target.result;
+                    card.fileName = file.name;
+                    card.error = null;
+                    this.saveData();
+                    this.render();
+                };
+                reader.onerror = () => {
+                    const card = this.findCard(cardId);
+                    card.error = 'Erreur lors du chargement de l\'image.';
+                    this.saveData();
+                    this.render();
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            handlePaste(e) {
+                const items = e.clipboardData.items;
+                for (let item of items) {
+                    if (item.type.indexOf('image') !== -1) {
+                        const file = item.getAsFile();
+                        const error = this.validateFile(file);
+                        
+                        if (error) {
+                            console.warn('Paste error:', error);
+                            return;
+                        }
+                        
+                        // Pour paste, on ajoute à la première catégorie
+                        const firstCategory = this.categories[0];
+                        const newCard = {
+                            id: `card-${this.cardIdCounter++}`,
+                            image: null,
+                            fileName: file.name,
+                            creator: '',
+                            acquisition: '',
+                            source: '',
+                            error: null
+                        };
+                        // Ajouter la nouvelle carte au début du tableau (en haut)
+                        firstCategory.cards.unshift(newCard);
+                        this.loadImage(file, newCard.id);
+                        break;
+                    }
+                }
+            }
+            
+            findCard(cardId) {
+                for (let category of this.categories) {
+                    const card = category.cards.find(c => c.id === cardId);
+                    if (card) return card;
+                }
+                return null;
+            }
+            
+            handleCategoryDragStart(e, category) {
+                this.draggedCategory = category;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', ''); // Pour la compatibilité
+            }
+            
+            handleCategoryDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            }
+            
+            handleCategoryDrop(e) {
+                e.preventDefault();
+                if (!this.draggedCategory) return;
+                
+                const targetCategoryEl = e.currentTarget;
+                const targetCategoryId = targetCategoryEl.dataset.categoryId;
+                
+                if (this.draggedCategory.id !== targetCategoryId) {
+                    const draggedIndex = this.categories.findIndex(c => c.id === this.draggedCategory.id);
+                    const targetIndex = this.categories.findIndex(c => c.id === targetCategoryId);
+                    
+                    this.categories.splice(draggedIndex, 1);
+                    this.categories.splice(targetIndex, 0, this.draggedCategory);
+                    
+                    this.saveData();
+                    this.render();
+                }
+                
+                this.draggedCategory = null;
+            }
+            
+            handleCardDragStart(e, cardId) {
+                this.draggedCard = this.findCard(cardId);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', '');
+            }
+            
+            handleCardDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                
+                // Empêcher le conflit avec le drag d'images
+                if (e.dataTransfer.types.includes('Files')) {
+                    return;
+                }
+            }
+            
+            handleCardDrop(e, targetCategoryId) {
+                e.preventDefault();
+                if (!this.draggedCard) return;
+                
+                // Empêcher le conflit avec le drop d'images
+                if (e.dataTransfer.files.length > 0) {
+                    return;
+                }
+                
+                const sourceCategory = this.categories.find(c =>
+                    c.cards.some(card => card.id === this.draggedCard.id)
+                );
+                const targetCategory = this.categories.find(c => c.id === targetCategoryId);
+                
+                if (sourceCategory && targetCategory && sourceCategory.id !== targetCategory.id) {
+                    sourceCategory.cards = sourceCategory.cards.filter(c => c.id !== this.draggedCard.id);
+                    targetCategory.cards.push(this.draggedCard);
+                    this.saveData();
+                    this.render();
+                }
+                
+                this.draggedCard = null;
+            }
+            
+            showModal(title, message, callback) {
+                document.getElementById('confirmTitle').textContent = title;
+                document.getElementById('confirmMessage').textContent = message;
+                document.getElementById('confirmModal').classList.remove('hidden');
+                document.getElementById('confirmModal').classList.add('flex');
+                this.confirmCallback = callback;
+            }
+            
+            hideModal() {
+                document.getElementById('confirmModal').classList.add('hidden');
+                document.getElementById('confirmModal').classList.remove('flex');
+                this.confirmCallback = null;
+            }
+        }
+        
+        // Initialize the kanban board
+        const kanban = new KanbanBoard();
+        
+        // Event delegation pour les éléments dynamiques
+        document.addEventListener('click', (e) => {
+            // Gestion du clic sur les conteneurs d'images
+            const imageContainer = e.target.closest('.image-container');
+            if (imageContainer) {
+                e.preventDefault();
+                e.stopPropagation();
+                const cardId = imageContainer.dataset.cardId;
+                const card = kanban.findCard(cardId);
+                
+                if (card.image) {
+                    kanban.showModal(
+                        'Remplacer l\'image',
+                        'Voulez-vous remplacer l\'image existante ?',
+                        () => kanban.selectImage(cardId)
+                    );
+                } else {
+                    kanban.selectImage(cardId);
+                }
+                return;
+            }
+            
+            // Gestion du clic sur les boutons de suppression
+            if (e.target.closest('.delete-card')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const cardEl = e.target.closest('.card');
+                const cardId = cardEl.dataset.cardId;
+                kanban.showModal(
+                    'Supprimer la carte',
+                    'Voulez-vous vraiment supprimer cette carte ?',
+                    () => {
+                        for (let category of kanban.categories) {
+                            category.cards = category.cards.filter(c => c.id !== cardId);
+                        }
+                        kanban.saveData();
+                        kanban.render();
+                    }
+                );
+            }
+        });
+        
+        // Événements de drag pour les cartes
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('card')) {
+                const cardId = e.target.dataset.cardId;
+                kanban.handleCardDragStart(e, cardId);
+                e.target.classList.add('dragging');
+            }
+        });
+        
+        document.addEventListener('dragend', (e) => {
+            if (e.target.classList.contains('card')) {
+                e.target.classList.remove('dragging');
+                kanban.draggedCard = null;
+            }
+        });
+        
+        // Debouncing pour les inputs
+        let inputTimeout;
+        document.addEventListener('input', (e) => {
+            clearTimeout(inputTimeout);
+            inputTimeout = setTimeout(() => {
+                if (e.target.classList.contains('creator-input')) {
+                    const cardEl = e.target.closest('.card');
+                    const card = kanban.findCard(cardEl.dataset.cardId);
+                    if (card) {
+                        card.creator = e.target.value;
+                        kanban.saveData();
+                    }
+                }
+                
+                if (e.target.classList.contains('source-input')) {
+                    const cardEl = e.target.closest('.card');
+                    const card = kanban.findCard(cardEl.dataset.cardId);
+                    if (card) {
+                        card.source = e.target.value;
+                        kanban.saveData();
+                    }
+                }
+            }, 300);
+        });
+        
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('acquisition-select')) {
+                const cardEl = e.target.closest('.card');
+                const card = kanban.findCard(cardEl.dataset.cardId);
+                if (card) {
+                    card.acquisition = e.target.value;
+                    kanban.saveData();
+                }
+                
+                // Mise à jour du style visuel
+                e.target.className = e.target.className.replace(/acquisition-\w+/g, '');
+                if (e.target.value) {
+                    e.target.classList.add(`acquisition-${e.target.value}`);
+                }
+            }
+        });
+        
+        // Drag and drop pour les images (séparé du drag des cartes)
+        document.addEventListener('dragover', (e) => {
+            const imageContainer = e.target.closest('.image-container');
+            if (imageContainer && e.dataTransfer.types.includes('Files')) {
+                e.preventDefault();
+                imageContainer.classList.add('drag-over');
+            }
+        });
+        
+        document.addEventListener('dragleave', (e) => {
+            const imageContainer = e.target.closest('.image-container');
+            if (imageContainer) {
+                imageContainer.classList.remove('drag-over');
+            }
+        });
+        
+        document.addEventListener('drop', (e) => {
+            const imageContainer = e.target.closest('.image-container');
+            if (imageContainer && e.dataTransfer.files.length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                imageContainer.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type.startsWith('image/')) {
+                    const cardId = imageContainer.dataset.cardId;
+                    const card = kanban.findCard(cardId);
+                    const file = files[0];
+                    
+                    const error = kanban.validateFile(file);
+                    if (error) {
+                        card.error = error;
+                        kanban.render();
+                        return;
+                    }
+                    
+                    // Vérifier s'il y a déjà une image
+                    if (card.image) {
+                        kanban.showModal(
+                            'Remplacer l\'image',
+                            'Une image existe déjà. Voulez-vous la remplacer ?',
+                            () => kanban.loadImage(file, cardId)
+                        );
+                    } else {
+                        kanban.loadImage(file, cardId);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
