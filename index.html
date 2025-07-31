@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+.export-btn {        /* Responsive Design */<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -377,7 +377,55 @@
             background: #edf2f7;
         }
 
-        /* Responsive Design */
+        .import-btn {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #718096;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0;
+        }
+
+        .create-new:hover .import-btn {
+            opacity: 1;
+        }
+
+        .import-btn:hover {
+            background: #edf2f7;
+            color: #4a5568;
+            transform: translateY(-1px);
+        }
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #a0aec0;
+            font-size: 12px;
+            opacity: 0;
+        }
+
+        .shooting-card:hover .export-btn {
+            opacity: 1;
+        }
+
+        .export-btn:hover {
+            background: #edf2f7;
+            color: #718096;
+            transform: translateY(-1px);
+        }
+
+        /* Create options modal */
         @media (max-width: 768px) {
             .container {
                 padding: 20px 16px;
@@ -451,20 +499,10 @@
             </button>
         </div>
 
-        <!-- Project Management Buttons -->
-        <div class="project-management" style="display: flex; justify-content: center; gap: 12px; margin-bottom: 32px;">
-            <button id="exportProjectBtn" class="nav-btn" style="background: #f8f9fa; color: #718096; border: 1px solid #e2e8f0;" onclick="exportProject()">
-                <span class="nav-icon">⬇</span>
-                Export Project
-            </button>
-            <button id="importProjectBtn" class="nav-btn" style="background: #f8f9fa; color: #718096; border: 1px solid #e2e8f0;" onclick="importProject()">
-                <span class="nav-icon">⬆</span>
-                Import Project
-            </button>
-        </div>
-
         <!-- Hidden file input -->
         <input type="file" id="projectImportFile" accept=".json" style="display: none;">
+
+        <!-- Project Management Buttons -->
 
         <!-- HOME PAGE -->
         <div id="home" class="page active">
@@ -480,6 +518,10 @@
                     </div>
                     <h3>New Shooting</h3>
                     <p>Create a new project</p>
+                    <button class="import-btn" onclick="event.stopPropagation(); importProject();" title="Import existing project">
+                        <span style="font-size: 12px;">📥</span>
+                        Import
+                    </button>
                 </div>
                 
                 <div class="shooting-card" onclick="loadShooting('Fashion Week 2024')">
@@ -492,7 +534,12 @@
                                 <p><span class="icon icon-calendar"></span> March 15, 2024</p>
                                 <p><span class="icon icon-users"></span> Sarah, Emma</p>
                             </div>
-                            <div class="shooting-status status-progress">In Progress</div>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="shooting-status status-progress">In Progress</div>
+                                <button class="export-btn" onclick="exportProject('Fashion Week 2024')" title="Export project">
+                                    <span style="font-size: 12px;">⬇</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -507,7 +554,12 @@
                                 <p><span class="icon icon-calendar"></span> June 20, 2024</p>
                                 <p><span class="icon icon-users"></span> Alex, Maya</p>
                             </div>
-                            <div class="shooting-status status-planning">Planning</div>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="shooting-status status-planning">Planning</div>
+                                <button class="export-btn" onclick="exportProject('Summer Collection')" title="Export project">
+                                    <span style="font-size: 12px;">⬇</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -522,7 +574,12 @@
                                 <p><span class="icon icon-calendar"></span> April 5, 2024</p>
                                 <p><span class="icon icon-users"></span> Jordan</p>
                             </div>
-                            <div class="shooting-status status-completed">Completed</div>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="shooting-status status-completed">Completed</div>
+                                <button class="export-btn" onclick="exportProject('Urban Street Style')" title="Export project">
+                                    <span style="font-size: 12px;">⬇</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -611,6 +668,23 @@
 
         let currentShooting = null;
 
+        // Show create options modal
+        function showCreateOptions() {
+            const modal = document.getElementById('createOptionsModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            } else {
+                console.error('createOptionsModal not found');
+            }
+        }
+
+        function closeCreateOptions() {
+            const modal = document.getElementById('createOptionsModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
         // Page navigation
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => {
@@ -683,7 +757,12 @@
                                 <p><span class="icon icon-calendar"></span> ${shooting.date}</p>
                                 <p><span class="icon icon-users"></span> ${shooting.models}</p>
                             </div>
-                            <div class="shooting-status ${statusClass}">${statusText}</div>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="shooting-status ${statusClass}">${statusText}</div>
+                                <button class="export-btn" onclick="exportProject('${shooting.name}')" title="Export project">
+                                    <span style="font-size: 12px;">⬇</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -740,6 +819,11 @@
 
         // Handle project import
         document.addEventListener('DOMContentLoaded', function() {
+            // Ensure modals exist
+            console.log('DOM loaded, checking modals...');
+            console.log('createOptionsModal:', document.getElementById('createOptionsModal'));
+            console.log('newShootingModal:', document.getElementById('newShootingModal'));
+            
             document.getElementById('projectImportFile').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
