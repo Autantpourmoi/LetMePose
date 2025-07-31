@@ -424,7 +424,7 @@
 <body>
     <div class="container">
         <!-- Navigation -->
-        <div class="nav-buttons">
+                        <div class="nav-buttons">
             <button class="nav-btn active" onclick="showPage('home')">
                 <span class="nav-icon">⌂</span>
                 Home
@@ -450,6 +450,21 @@
                 Location
             </button>
         </div>
+
+        <!-- Project Management Buttons -->
+        <div class="project-management" style="display: flex; justify-content: center; gap: 12px; margin-bottom: 32px;">
+            <button id="exportProjectBtn" class="nav-btn" style="background: #f8f9fa; color: #718096; border: 1px solid #e2e8f0;" onclick="exportProject()">
+                <span class="nav-icon">⬇</span>
+                Export Project
+            </button>
+            <button id="importProjectBtn" class="nav-btn" style="background: #f8f9fa; color: #718096; border: 1px solid #e2e8f0;" onclick="importProject()">
+                <span class="nav-icon">⬆</span>
+                Import Project
+            </button>
+        </div>
+
+        <!-- Hidden file input -->
+        <input type="file" id="projectImportFile" accept=".json" style="display: none;">
 
         <!-- HOME PAGE -->
         <div id="home" class="page active">
@@ -685,7 +700,98 @@
             }
         });
 
-        console.log('Minimalist Shooting Organization System ready');
+        // Project import/export functionality
+        function exportProject() {
+            if (!currentShooting) {
+                alert('Sélectionnez un projet à exporter');
+                return;
+            }
+
+            // Gather all project data
+            const projectData = {
+                projectName: currentShooting,
+                exportDate: new Date().toISOString(),
+                metadata: {
+                    shootings: shootings,
+                    currentShooting: currentShooting
+                },
+                stylismData: JSON.parse(localStorage.getItem('kanban-stylisme-data') || '{}'),
+                fittingData: JSON.parse(localStorage.getItem('kanban-fitting-data') || '{}'),
+                locationData: JSON.parse(localStorage.getItem('kanban-location-data') || '{}'),
+                moodBoardData: JSON.parse(localStorage.getItem('mood-board-data') || '{}'),
+                infoData: JSON.parse(localStorage.getItem('project-info-data') || '{}')
+            };
+
+            // Create and download file
+            const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `shooting-project-${currentShooting.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importProject() {
+            document.getElementById('projectImportFile').click();
+        }
+
+        // Handle project import
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('projectImportFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const projectData = JSON.parse(event.target.result);
+                        
+                        if (!projectData.projectName) {
+                            alert('Fichier de projet invalide');
+                            return;
+                        }
+
+                        // Import all data
+                        if (projectData.metadata && projectData.metadata.shootings) {
+                            shootings = projectData.metadata.shootings;
+                            refreshShootingGrid();
+                        }
+
+                        if (projectData.stylismData && Object.keys(projectData.stylismData).length > 0) {
+                            localStorage.setItem('kanban-stylisme-data', JSON.stringify(projectData.stylismData));
+                        }
+
+                        if (projectData.fittingData && Object.keys(projectData.fittingData).length > 0) {
+                            localStorage.setItem('kanban-fitting-data', JSON.stringify(projectData.fittingData));
+                        }
+
+                        if (projectData.locationData && Object.keys(projectData.locationData).length > 0) {
+                            localStorage.setItem('kanban-location-data', JSON.stringify(projectData.locationData));
+                        }
+
+                        if (projectData.moodBoardData && Object.keys(projectData.moodBoardData).length > 0) {
+                            localStorage.setItem('mood-board-data', JSON.stringify(projectData.moodBoardData));
+                        }
+
+                        if (projectData.infoData && Object.keys(projectData.infoData).length > 0) {
+                            localStorage.setItem('project-info-data', JSON.stringify(projectData.infoData));
+                        }
+
+                        currentShooting = projectData.projectName;
+                        alert(`Projet "${projectData.projectName}" importé avec succès !`);
+                        
+                    } catch (error) {
+                        alert('Erreur lors de l\'importation du projet');
+                        console.error('Import error:', error);
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = ''; // Reset input
+            });
+        });
     </script>
 </body>
 </html>
