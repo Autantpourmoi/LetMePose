@@ -1,1 +1,832 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stylisme Shooting - Kanban</title>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Avenir', 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            background: #fafbfc;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        
+        .main-header {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 32px;
+            margin: 24px;
+            margin-bottom: 32px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
 
+        .main-title {
+            font-size: 2rem;
+            font-weight: 400;
+            color: #2d3748;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .category-count {
+            font-size: 0.85rem;
+            color: #a0aec0;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #2d3748;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #1a202c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(45, 55, 72, 0.2);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #718096;
+            border-color: #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #edf2f7;
+            color: #4a5568;
+            transform: translateY(-1px);
+        }
+
+        .kanban-container {
+            overflow-x: auto;
+            padding-bottom: 20px;
+        }
+        
+        .kanban-board {
+            display: flex;
+            gap: 24px;
+            min-width: fit-content;
+            padding: 24px;
+            align-items: flex-start;
+        }
+        
+        .category-column {
+            min-width: 300px;
+            max-width: 300px;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            height: fit-content;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+
+        .category-header {
+            padding: 24px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .category-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .category-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #2d3748;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .delete-category {
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-category:hover {
+            color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .cards-container {
+            padding: 24px;
+        }
+
+        .btn-add {
+            width: 100%;
+            padding: 16px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            background: transparent;
+            color: #a0aec0;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-align: center;
+        }
+
+        .btn-add:hover {
+            border-color: #cbd5e0;
+            color: #718096;
+            background: #f8f9fa;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #f1f3f5;
+            padding: 16px;
+            margin-bottom: 16px;
+            cursor: move;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .card:hover .delete-card {
+            opacity: 1;
+        }
+
+        .delete-card {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #ffffff;
+            border-radius: 50%;
+            padding: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+            z-index: 5;
+            border: 1px solid #f1f3f5;
+        }
+
+        .delete-card:hover {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fed7d7;
+        }
+
+        .image-container {
+            min-height: 120px;
+            background: #f8f9fa;
+            border: 1px dashed #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .image-container:hover {
+            background: #f1f3f5;
+            border-color: #cbd5e0;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: #fafbfc;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: #a0aec0;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(160, 174, 192, 0.1);
+        }
+
+        .select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: #fafbfc;
+            cursor: pointer;
+        }
+
+        .select:focus {
+            outline: none;
+            border-color: #a0aec0;
+            background: #ffffff;
+        }
+
+        .acquisition-pret { 
+            background-color: #e6fffa !important; 
+            color: #234e52 !important; 
+            border-color: #a7f3d0 !important;
+        }
+        .acquisition-achat { 
+            background-color: #f0fff4 !important; 
+            color: #22543d !important; 
+            border-color: #9ae6b4 !important;
+        }
+        .acquisition-don { 
+            background-color: #fef5e7 !important; 
+            color: #975a16 !important; 
+            border-color: #fbd38d !important;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 12px;
+            border: 1px solid #fed7d7;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+            border: 1px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #2d3748;
+            margin-bottom: 12px;
+        }
+
+        .modal-message {
+            color: #718096;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .kanban-board {
+                padding: 16px;
+                gap: 16px;
+            }
+            
+            .category-column {
+                min-width: 280px;
+            }
+            
+            .main-header {
+                padding: 24px;
+                margin: 16px;
+            }
+            
+            .main-title {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-header">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <h1 class="main-title">Stylisme</h1>
+                <p class="category-count">Organisation des éléments du stylisme</p>
+            </div>
+            <div>
+                <button id="addCategoryBtn" class="btn btn-primary">
+                    <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                    Ajouter une catégorie
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="kanban-container">
+        <div id="kanbanBoard" class="kanban-board">
+            <!-- Categories will be inserted here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 class="modal-title" id="confirmTitle">Confirmation</h3>
+            <p class="modal-message" id="confirmMessage">Êtes-vous sûr ?</p>
+            <div class="modal-buttons">
+                <button id="confirmCancel" class="btn btn-secondary">Annuler</button>
+                <button id="confirmOk" class="btn btn-primary">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // This class manages all the kanban board functionality
+        class KanbanBoard {
+            constructor() {
+                // Default categories that will appear when the page loads
+                this.categories = [
+                    { id: 'chaussures', name: 'Chaussures', color: '#718096', cards: [] },
+                    { id: 'bijoux', name: 'Bijoux & Accessoires', color: '#a0aec0', cards: [] },
+                    { id: 'sacs', name: 'Sacs', color: '#718096', cards: [] },
+                    { id: 'chapeaux', name: 'Chapeaux', color: '#a0aec0', cards: [] },
+                    { id: 'hauts', name: 'Hauts', color: '#718096', cards: [] },
+                    { id: 'bas', name: 'Bas', color: '#a0aec0', cards: [] },
+                    { id: 'dessous', name: 'Dessous', color: '#718096', cards: [] }
+                ];
+                
+                // Counters to ensure unique IDs for new items
+                this.cardIdCounter = 1;
+                this.categoryIdCounter = 8;
+                
+                // Variables to store callback functions
+                this.confirmCallback = null;
+                
+                // Load any previously saved data and initialize the board
+                this.loadData();
+                this.init();
+            }
+            
+            // Save all data to browser's local storage so it persists between sessions
+            saveData() {
+                try {
+                    const dataToSave = {
+                        categories: this.categories,
+                        cardIdCounter: this.cardIdCounter,
+                        categoryIdCounter: this.categoryIdCounter,
+                        timestamp: new Date().toISOString()
+                    };
+                    localStorage.setItem('kanban-stylisme-data', JSON.stringify(dataToSave));
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                }
+            }
+            
+            // Load previously saved data from local storage
+            loadData() {
+                try {
+                    const savedData = localStorage.getItem('kanban-stylisme-data');
+                    if (savedData) {
+                        const parsedData = JSON.parse(savedData);
+                        this.categories = parsedData.categories || this.categories;
+                        this.cardIdCounter = parsedData.cardIdCounter || this.cardIdCounter;
+                        this.categoryIdCounter = parsedData.categoryIdCounter || this.categoryIdCounter;
+                    }
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                }
+            }
+            
+            // Initialize the board and set up event listeners
+            init() {
+                this.render();
+                this.setupEventListeners();
+                // Initialize Lucide icons after a short delay to ensure DOM is ready
+                setTimeout(() => {
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }, 100);
+            }
+            
+            // Set up event listeners for buttons and interactions
+            setupEventListeners() {
+                // Add category button
+                const addBtn = document.getElementById('addCategoryBtn');
+                if (addBtn) {
+                    addBtn.addEventListener('click', () => this.addCategory());
+                }
+                
+                // Modal buttons
+                const cancelBtn = document.getElementById('confirmCancel');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', () => this.hideModal());
+                }
+                
+                const okBtn = document.getElementById('confirmOk');
+                if (okBtn) {
+                    okBtn.addEventListener('click', () => {
+                        if (this.confirmCallback) {
+                            this.confirmCallback();
+                        }
+                        this.hideModal();
+                    });
+                }
+            }
+            
+            // Render the entire kanban board
+            render() {
+                const board = document.getElementById('kanbanBoard');
+                if (!board) return;
+                
+                // Clear existing content
+                board.innerHTML = '';
+                
+                // Create and add each category column
+                this.categories.forEach(category => {
+                    const categoryEl = this.createCategoryElement(category);
+                    board.appendChild(categoryEl);
+                });
+                
+                // Recreate icons after DOM changes
+                setTimeout(() => {
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }, 50);
+            }
+            
+            // Create HTML element for a single category column
+            createCategoryElement(category) {
+                const categoryEl = document.createElement('div');
+                categoryEl.className = 'category-column';
+                categoryEl.dataset.categoryId = category.id;
+                
+                // Build the HTML structure for this category
+                categoryEl.innerHTML = `
+                    <div class="category-header">
+                        <div class="category-header-content">
+                            <div>
+                                <h3 class="category-title">${category.name}</h3>
+                                <div class="category-count">${category.cards.length} élément(s)</div>
+                            </div>
+                            <button class="delete-category" data-category-id="${category.id}">
+                                <i data-lucide="x" style="width: 16px; height: 16px;">×</i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cards-container">
+                        <button class="btn-add" data-category-id="${category.id}">
+                            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                            <span>Ajouter une carte</span>
+                        </button>
+                        <div class="cards-list" style="margin-top: 20px;">
+                            ${category.cards.map(card => this.createCardHTML(card)).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                return categoryEl;
+            }
+            
+            // Create HTML for a single card
+            createCardHTML(card) {
+                return `
+                    <div class="card" data-card-id="${card.id}">
+                        <button class="delete-card" data-card-id="${card.id}">
+                            <i data-lucide="x" style="width: 12px; height: 12px;"></i>
+                        </button>
+                        <div class="image-container" data-card-id="${card.id}">
+                            ${card.image ? 
+                                `<div style="width: 100%;">
+                                    <img src="${card.image}" alt="Image" style="width: 100%;">
+                                    <div style="font-size: 12px; color: #a0aec0; margin-top: 8px; word-break: break-all;">${card.fileName || 'Image'}</div>
+                                </div>` :
+                                `<div style="text-align: center; color: #a0aec0;">
+                                    <i data-lucide="image" style="width: 32px; height: 32px; margin: 0 auto 8px;"></i>
+                                    <div style="font-size: 14px;">Ajouter une image</div>
+                                </div>`
+                            }
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <input type="text" placeholder="Créateur/Designer" value="${card.creator || ''}" 
+                                   class="input creator-input" data-card-id="${card.id}">
+                            <select class="select acquisition-select ${card.acquisition ? 'acquisition-' + card.acquisition : ''}" 
+                                    data-card-id="${card.id}">
+                                <option value="">Acquis par...</option>
+                                <option value="pret" ${card.acquisition === 'pret' ? 'selected' : ''}>Prêt</option>
+                                <option value="achat" ${card.acquisition === 'achat' ? 'selected' : ''}>Achat</option>
+                                <option value="don" ${card.acquisition === 'don' ? 'selected' : ''}>Don</option>
+                            </select>
+                            <input type="text" placeholder="Boutique/Personne" value="${card.source || ''}" 
+                                   class="input source-input" data-card-id="${card.id}">
+                        </div>
+                        ${card.error ? `<div class="error-message">${card.error}</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            // Add a new category
+            addCategory() {
+                const newCategory = {
+                    id: `category-${this.categoryIdCounter++}`,
+                    name: 'Nouvelle catégorie',
+                    color: '#718096',
+                    cards: []
+                };
+                
+                this.categories.push(newCategory);
+                this.saveData();
+                this.render();
+            }
+            
+            // Delete a category with confirmation
+            deleteCategory(categoryId) {
+                const category = this.categories.find(c => c.id === categoryId);
+                if (!category) return;
+                
+                const deleteAction = () => {
+                    this.categories = this.categories.filter(c => c.id !== categoryId);
+                    this.saveData();
+                    this.render();
+                };
+                
+                if (category.cards.length > 0) {
+                    this.showModal(
+                        'Supprimer la catégorie',
+                        `La catégorie "${category.name}" contient ${category.cards.length} carte(s). Voulez-vous vraiment la supprimer ?`,
+                        deleteAction
+                    );
+                } else {
+                    this.showModal(
+                        'Supprimer la catégorie',
+                        `Voulez-vous vraiment supprimer la catégorie "${category.name}" ?`,
+                        deleteAction
+                    );
+                }
+            }
+            
+            // Add a new card to a category
+            addCard(categoryId) {
+                const category = this.categories.find(c => c.id === categoryId);
+                if (!category) return;
+                
+                const newCard = {
+                    id: `card-${this.cardIdCounter++}`,
+                    image: null,
+                    fileName: null,
+                    creator: '',
+                    acquisition: '',
+                    source: '',
+                    error: null
+                };
+                
+                category.cards.unshift(newCard);
+                this.saveData();
+                this.render();
+            }
+            
+            // Delete a card with confirmation
+            deleteCard(cardId) {
+                this.showModal(
+                    'Supprimer la carte',
+                    'Voulez-vous vraiment supprimer cette carte ?',
+                    () => {
+                        for (let category of this.categories) {
+                            category.cards = category.cards.filter(c => c.id !== cardId);
+                        }
+                        this.saveData();
+                        this.render();
+                    }
+                );
+            }
+            
+            // Find a card by its ID
+            findCard(cardId) {
+                for (let category of this.categories) {
+                    const card = category.cards.find(c => c.id === cardId);
+                    if (card) return card;
+                }
+                return null;
+            }
+            
+            // Handle image selection for a card
+            selectImage(cardId) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        this.loadImage(file, cardId);
+                    }
+                };
+                input.click();
+            }
+            
+            // Load an image file and add it to a card
+            loadImage(file, cardId) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const card = this.findCard(cardId);
+                    if (card) {
+                        card.image = e.target.result;
+                        card.fileName = file.name;
+                        card.error = null;
+                        this.saveData();
+                        this.render();
+                    }
+                };
+                reader.onerror = () => {
+                    const card = this.findCard(cardId);
+                    if (card) {
+                        card.error = 'Erreur lors du chargement de l\'image.';
+                        this.saveData();
+                        this.render();
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Update card creator field
+            updateCardCreator(cardId, value) {
+                const card = this.findCard(cardId);
+                if (card) {
+                    card.creator = value;
+                    this.saveData();
+                }
+            }
+            
+            // Update card source field
+            updateCardSource(cardId, value) {
+                const card = this.findCard(cardId);
+                if (card) {
+                    card.source = value;
+                    this.saveData();
+                }
+            }
+            
+            // Update card acquisition method
+            updateCardAcquisition(cardId, value) {
+                const card = this.findCard(cardId);
+                if (card) {
+                    card.acquisition = value;
+                    this.saveData();
+                }
+            }
+            
+            // Show confirmation modal
+            showModal(title, message, callback) {
+                const modal = document.getElementById('confirmModal');
+                const titleEl = document.getElementById('confirmTitle');
+                const messageEl = document.getElementById('confirmMessage');
+                
+                if (modal && titleEl && messageEl) {
+                    titleEl.textContent = title;
+                    messageEl.textContent = message;
+                    modal.classList.remove('hidden');
+                    this.confirmCallback = callback;
+                }
+            }
+            
+            // Hide confirmation modal
+            hideModal() {
+                const modal = document.getElementById('confirmModal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    this.confirmCallback = null;
+                }
+            }
+        }
+
+        // Initialize everything when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create the kanban board instance
+            const kanban = new KanbanBoard();
+            
+            // Set up event delegation to handle all clicks on the page
+            document.addEventListener('click', function(e) {
+                // Handle category deletion
+                if (e.target.closest('.delete-category')) {
+                    const categoryId = e.target.closest('.delete-category').dataset.categoryId;
+                    kanban.deleteCategory(categoryId);
+                    return;
+                }
+                
+                // Handle adding new cards
+                if (e.target.closest('.btn-add')) {
+                    const categoryId = e.target.closest('.btn-add').dataset.categoryId;
+                    kanban.addCard(categoryId);
+                    return;
+                }
+                
+                // Handle card deletion
+                if (e.target.closest('.delete-card')) {
+                    const cardId = e.target.closest('.delete-card').dataset.cardId;
+                    kanban.deleteCard(cardId);
+                    return;
+                }
+                
+                // Handle image container clicks
+                if (e.target.closest('.image-container')) {
+                    const cardId = e.target.closest('.image-container').dataset.cardId;
+                    kanban.selectImage(cardId);
+                    return;
+                }
+            });
+            
+            // Handle input changes with debouncing to avoid saving too frequently
+            let inputTimeout;
+            document.addEventListener('input', function(e) {
+                clearTimeout(inputTimeout);
+                inputTimeout = setTimeout(function() {
+                    if (e.target.classList.contains('creator-input')) {
+                        const cardId = e.target.dataset.cardId;
+                        kanban.updateCardCreator(cardId, e.target.value);
+                    }
+                    
+                    if (e.target.classList.contains('source-input')) {
+                        const cardId = e.target.dataset.cardId;
+                        kanban.updateCardSource(cardId, e.target.value);
+                    }
+                }, 300);
+            });
+            
+            // Handle dropdown changes
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('acquisition-select')) {
+                    const cardId = e.target.dataset.cardId;
+                    kanban.updateCardAcquisition(cardId, e.target.value);
+                    
+                    // Update visual styling
+                    e.target.className = e.target.className.replace(/acquisition-\w+/g, '');
+                    if (e.target.value) {
+                        e.target.classList.add(`acquisition-${e.target.value}`);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
